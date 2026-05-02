@@ -26,7 +26,6 @@ export default {
       await env.FILE_KV.put(KV_KEY, buf, {
         metadata: {
           name: file.name,
-          type: file.type,
           size: file.size
         }
       });
@@ -40,7 +39,7 @@ export default {
 
       return new Response(value, {
         headers: {
-          "Content-Type": metadata.type || "application/octet-stream",
+          "Content-Type": "application/octet-stream",
           "Content-Disposition": `attachment; filename="${encodeURIComponent(metadata.name)}"`
         }
       });
@@ -58,8 +57,7 @@ export default {
       return new Response(JSON.stringify({
         exist: !!metadata,
         name: metadata?.name || "",
-        size: metadata?.size || 0,
-        type: metadata?.type || ""
+        size: metadata?.size || 0
       }), {
         headers: { "Content-Type": "application/json" }
       });
@@ -126,7 +124,7 @@ async function loadInfo(){
     el.innerText='暂无存储文件';
     return;
   }
-  el.innerText='文件名：'+d.name+'\\n大小：'+fmtSize(d.size)+'\\n类型：'+d.type;
+  el.innerText='文件名：'+d.name+'\\n大小：'+fmtSize(d.size);
 }
 async function upload(){
   const f=document.getElementById('file').files[0];
