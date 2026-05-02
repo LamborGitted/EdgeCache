@@ -10,21 +10,18 @@ export default {
       });
     }
 
-    // 上传：不判断大小, 直接尝试写入 KV, 失败就报错
     if (url.pathname === "/upload" && request.method === "POST") {
       try {
         const form = await request.formData();
         const file = form.get("file");
         const buf = await file.arrayBuffer();
 
-        // 直接尝试写入 KV, 超过 25MB 会自动抛错
         await env.FILE_KV.put(KV_KEY, buf, {
           metadata: { name: file.name, size: file.size }
         });
 
         return new Response("ok");
       } catch (err) {
-        // 无法写入 = 文件超过 KV 25MB 限制
         return resMsg("上传失败, 可能文件过大", 400);
       }
     }
@@ -70,65 +67,171 @@ function pageHtml() {
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EdgeCache</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
-body{max-width:450px;margin:60px auto;padding:0 20px}
-.box{border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:20px}
-.tip{color:#ef4444;font-size:14px;margin:8px 0}
-.info{background:#f9fafb;padding:12px;border-radius:8px;margin:12px 0}
-button{padding:9px 18px;border:none;border-radius:8px;cursor:pointer;margin:6px 4px}
-.btn-blue{background:#3b82f6;color:#fff}
-.btn-red{background:#ef4444;color:#fff}
-#status{margin-top:12px;color:#ef4444}
-#uploadArea, #fileArea{display:none}
-
-input[type="file"]{
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  overflow: hidden;
-  position: absolute;
-  z-index: -1;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-.upload-btn{
-  display: inline-block;
-  padding:9px 18px;
-  background:#3b82f6;
-  color:#fff;
-  border-radius:8px;
-  cursor:pointer;
-  margin:6px 0;
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 保留你要求的渐变背景 */
+  background: linear-gradient(135deg, rgb(255, 100, 180) 0%, rgb(200, 150, 255) 50%, rgb(0, 255, 255) 100%);
+  padding: 20px;
+}
+
+/* 核心卡片：响应式，无固定宽高 */
+.card {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+  padding: 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 标题样式 */
+.card-title {
+  font-size: 24px;
+  color: #111;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* 提示文字 */
+.tip {
+  color: #dc2626;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* 文件信息盒子：支持长文本换行 */
+.file-info {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 18px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.6;
+  word-break: break-all;
+  white-space: pre-wrap;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 按钮容器：弹性布局，自动间距 */
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto; /* 自动推到下方，永远留间距 */
+}
+
+/* 按钮样式 */
+.btn {
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.2s;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* 上传按钮 */
+.upload-btn {
+  background: #3b82f6;
+  color: #fff;
+  padding: 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 16px;
+}
+
+/* 状态提示 */
+#status {
+  color: #dc2626;
+  font-size: 14px;
+  text-align: center;
+  min-height: 20px;
+}
+
+/* 隐藏元素 */
+#uploadArea, #fileArea {
+  display: none;
+}
+
+/* 隐藏原生文件选择框 */
+input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* hover 动效 */
+.btn:hover, .upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 </style>
 </head>
 <body>
 
-<div id="uploadArea" class="box">
-  <h3>上传文件</h3>
-  <p class="tip">仅保存1个, 存储容量受KV限制(25MB)</p>
-  
-  <label class="upload-btn" for="file">上传文件</label>
+<!-- 上传区域 -->
+<div id="uploadArea" class="card">
+  <h2 class="card-title">上传文件</h2>
+  <p class="tip">仅保存1个 · KV 单文件限制 25MB</p>
+  <label class="upload-btn" for="file">选择文件上传</label>
   <input type="file" id="file">
   <div id="status"></div>
 </div>
 
-<div id="fileArea" class="box">
-  <h3>当前文件</h3>
-  <div class="info" id="fileInfo"></div>
-  <button class="btn-blue" onclick="download()">下载</button>
-  <button class="btn-red" onclick="delFile()">删除</button>
+<!-- 文件展示区域 -->
+<div id="fileArea" class="card">
+  <h2 class="card-title">当前文件</h2>
+  <div class="file-info" id="fileInfo"></div>
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="download()">下载文件</button>
+    <button class="btn btn-danger" onclick="delFile()">删除文件</button>
+  </div>
 </div>
 
 <script>
+// 文件大小格式化
 function fmtSize(b){
   if(b<1024)return b+'B';
   if(b<1048576)return (b/1024).toFixed(1)+'KB';
   return (b/1048576).toFixed(2)+'MB';
 }
 
+// 加载文件信息
 async function loadInfo(){
   const res=await fetch('/info');
   const d=await res.json();
@@ -138,18 +241,18 @@ async function loadInfo(){
   const status = document.getElementById('status');
 
   if(!d.exist){
-    uploadArea.style.display = 'block';
+    uploadArea.style.display = 'flex';
     fileArea.style.display = 'none';
     status.innerText = '';
     return;
   }
 
   uploadArea.style.display = 'none';
-  fileArea.style.display = 'block';
-  document.getElementById('fileInfo').innerText = '文件名：'+d.name+'\\n大小：'+fmtSize(d.size);
+  fileArea.style.display = 'flex';
+  document.getElementById('fileInfo').innerText = d.name+'\\n大小：'+fmtSize(d.size);
 }
 
-// 完全不判断大小, 直接上传
+// 上传文件
 document.getElementById('file').addEventListener('change', async (e) => {
   const f = e.target.files[0];
   if(!f) return;
@@ -168,8 +271,10 @@ document.getElementById('file').addEventListener('change', async (e) => {
   }
 });
 
+// 下载文件
 function download(){window.location.href='/download'}
 
+// 删除文件
 async function delFile(){
   await fetch('/delete');
   loadInfo();
@@ -179,5 +284,5 @@ window.onload=loadInfo;
 </script>
 </body>
 </html>
-  `;
+`;
 }
