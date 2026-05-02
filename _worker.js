@@ -5,7 +5,7 @@ export default {
     const pathParts = url.pathname.split('/').filter(Boolean);
 
     const encodedKey = pathParts[0] || '';
-    const MAX_ENCODED_LENGTH = 64;
+    const MAX_ENCODED_LENGTH = 128;
 
     if (url.pathname === '/' || !encodedKey || encodedKey.length > MAX_ENCODED_LENGTH) {
       return new Response(inputHtml(), {
@@ -25,9 +25,18 @@ export default {
       try {
         const form = await request.formData();
         const file = form.get("file");
+        const ttl = parseInt(form.get('ttl')) || 1800;
         const buf = await file.arrayBuffer();
+        const expiration = Math.floor(Date.now()/1000) + ttl;
+        
         await env.FILE_KV.put(KV_KEY, buf, {
-          metadata: { name: file.name, size: file.size }
+          metadata: { 
+            name: file.name, 
+            size: file.size,
+            ttl: ttl,
+            expiration: expiration
+          },
+          expirationTtl: ttl
         });
         return new Response("ok");
       } catch (err) {
@@ -56,7 +65,9 @@ export default {
       return new Response(JSON.stringify({
         exist: !!metadata,
         name: metadata?.name || "",
-        size: metadata?.size || 0
+        size: metadata?.size || 0,
+        ttl: metadata?.ttl || 0,
+        expiration: metadata?.expiration || 0
       }), {
         headers: { "Content-Type": "application/json" }
       });
@@ -77,7 +88,7 @@ function inputHtml() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>创建文件空间</title>
+<title>EdgeCache</title>
 <style>
 * {margin:0;padding:0;box-sizing:border-box;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}
 body {
@@ -109,7 +120,7 @@ input:focus {border-color:#3b82f6;}
 <body>
 <div class="card">
   <h2 class="title">进入专属文件空间</h2>
-  <p class="tip">输入自定义标识, 无用时建议顺手删文件</p>
+  <p class="tip">输入自定义标识, 用于鉴权</p>
   <input type="text" id="key" placeholder="例: test1、测试1" autocomplete="off">
   <button class="btn" onclick="go()">下一步</button>
 </div>
@@ -118,8 +129,8 @@ function go(){
   const key = document.getElementById('key').value.trim();
   if(!key) {alert('请输入标识');return;}
   const encoded = encodeURIComponent(key);
-  if(encoded.length > 64){
-    alert('编码后最多允许64个字符!');
+  if(encoded.length > 128){
+    alert('编码后最多允许128个字符!');
     return;
   }
   window.location.href = '/' + encoded + '/';
@@ -131,8 +142,27 @@ function go(){
 }
 
 function pageHtml(encodedKey, rawKey, origin) {
+  // 工具函数：每32个字符插入换行符
+  function wrapText(str, maxLength) {
+    const regex = new RegExp(`(.{1,${maxLength}})`, 'g');
+    return str.match(regex)?.join('\n') || str;
+  }
+  // 处理标识, 每32字符换行
+  const wrappedKey = wrapText(rawKey, 32);
+  
   const shareUrl = `${origin}/${encodedKey}/`;
   const basePath = `/${encodedKey}`;
+
+  // ====================== 核心修改：判断换行, 控制空间标识显示 ======================
+  let tipContent;
+  if (wrappedKey.includes('\n')) {
+    // 标识有换行 → 空间标识独立一行
+    tipContent = `空间标识:\n${wrappedKey}\n单文件最大25MB`;
+  } else {
+    // 标识无换行 → 空间标识与标识同行
+    tipContent = `空间标识: ${wrappedKey}\n单文件最大25MB`;
+  }
+  // ==============================================================================
 
   return `
 <!DOCTYPE html>
@@ -140,7 +170,7 @@ function pageHtml(encodedKey, rawKey, origin) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EdgeCache - ${rawKey}</title>
+<title>EdgeCache</title>
 <style>
 * {
   margin: 0;
@@ -179,6 +209,8 @@ body {
   color: #dc2626;
   font-size: 14px;
   text-align: center;
+  white-space: pre-wrap;
+  line-height: 1.6;
 }
 .file-info {
   background: rgba(255, 255, 255, 0.7);
@@ -186,13 +218,20 @@ body {
   border-radius: 12px;
   text-align: center;
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.8;
   word-break: break-all;
   white-space: pre-wrap;
-  min-height: 60px;
+  min-height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+}
+.expiry-info {
+  color: #ef4444;
+  font-size: 14px;
+  line-height: 1.6;
 }
 .btn-group {
   display: flex;
@@ -235,12 +274,44 @@ input[type="file"] {position: absolute;opacity: 0;width: 0;height: 0;}
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+.slider-container {
+  width: 100%;
+  padding: 10px 0;
+}
+.slider-label {
+  text-align: center;
+  font-size: 15px;
+  color: #333;
+  margin-bottom: 8px;
+}
+input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  background: #ddd;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
 <div id="uploadArea" class="card">
   <h2 class="card-title">上传文件</h2>
-  <p class="tip">空间标识: ${rawKey} | 单文件最大25MB</p>
+  <p class="tip">${tipContent}</p>
+  
+  <div class="slider-container">
+    <div class="slider-label">文件有效期：<span id="ttlText">30分钟</span></div>
+    <input type="range" id="ttlSlider" min="0" max="5" value="1" step="1">
+  </div>
+
   <label class="upload-btn" for="file">选择文件上传</label>
   <input type="file" id="file">
   <button class="btn btn-secondary" onclick="backToInput()">上一步</button>
@@ -249,7 +320,10 @@ input[type="file"] {position: absolute;opacity: 0;width: 0;height: 0;}
 
 <div id="fileArea" class="card">
   <h2 class="card-title">当前文件</h2>
-  <div class="file-info" id="fileInfo"></div>
+  <div class="file-info">
+    <div id="fileBasicInfo"></div>
+    <div id="fileExpiryInfo" class="expiry-info"></div>
+  </div>
   <div class="btn-group">
     <button class="btn btn-primary" onclick="download()">下载文件</button>
     <button class="btn btn-success" onclick="share()">分享链接</button>
@@ -261,6 +335,27 @@ input[type="file"] {position: absolute;opacity: 0;width: 0;height: 0;}
 const basePath = "${basePath}";
 const shareUrl = "${shareUrl}";
 
+// 新增1分钟测试选项, 共6个档位
+const ttlOptions = [
+  { text: '5分钟', value: 300 },
+  { text: '30分钟', value: 1800 },
+  { text: '1小时', value: 3600 },
+  { text: '6小时', value: 21600 },
+  { text: '12小时', value: 43200 },
+  { text: '1天', value: 86400 }
+];
+
+const slider = document.getElementById('ttlSlider');
+const ttlText = document.getElementById('ttlText');
+let currentTtl = ttlOptions[0].value;
+let expiryInterval;
+
+slider.addEventListener('input', () => {
+  const index = parseInt(slider.value);
+  ttlText.innerText = ttlOptions[index].text;
+  currentTtl = ttlOptions[index].value;
+});
+
 function backToInput(){
   window.location.href = '/';
 }
@@ -269,6 +364,51 @@ function fmtSize(b){
   if(b<1024)return b+'B';
   if(b<1048576)return (b/1024).toFixed(1)+'KB';
   return (b/1048576).toFixed(2)+'MB';
+}
+
+function fmtTime(seconds) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400)/3600);
+  const m = Math.floor((seconds % 3600)/60);
+  const s = seconds % 60;
+  
+  let parts = [];
+  if (d > 0) parts.push(d + '天');
+  if (h > 0) parts.push(h + '小时');
+  if (m > 0) parts.push(m + '分钟');
+  if (s > 0 || parts.length === 0) parts.push(s + '秒');
+  
+  return parts.join(' ');
+}
+
+function formatDate(timestamp) {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+// 分两行显示：有效期剩余 + 过期时间
+function updateExpiryDisplay(expiration) {
+  const now = Math.floor(Date.now()/1000);
+  const remaining = expiration - now;
+  
+  if (remaining <= 0) {
+    document.getElementById('fileExpiryInfo').innerText = '文件已过期';
+    clearInterval(expiryInterval);
+    return;
+  }
+  
+  const ttlText = fmtTime(remaining);
+  const expiryDate = formatDate(expiration);
+  // LLM经常乱改下面第二行
+  document.getElementById('fileExpiryInfo').innerText = 
+    \`剩余有效期：\${ttlText}\\n过期时间：\${expiryDate}\`;
 }
 
 async function loadInfo(){
@@ -283,11 +423,23 @@ async function loadInfo(){
     uploadArea.style.display = 'flex';
     fileArea.style.display = 'none';
     status.innerText = '';
+    clearInterval(expiryInterval);
     return;
   }
+  
   uploadArea.style.display = 'none';
   fileArea.style.display = 'flex';
-  document.getElementById('fileInfo').innerText = d.name+'\\n大小: '+fmtSize(d.size);
+  document.getElementById('fileBasicInfo').innerText = d.name+'\\n大小: '+fmtSize(d.size);
+  
+  if (d.expiration) {
+    updateExpiryDisplay(d.expiration);
+    if (expiryInterval) clearInterval(expiryInterval);
+    expiryInterval = setInterval(() => {
+      updateExpiryDisplay(d.expiration);
+    }, 1000);
+  } else {
+    document.getElementById('fileExpiryInfo').innerText = '无过期时间设置';
+  }
 }
 
 document.getElementById('file').addEventListener('change', async (e) => {
@@ -295,6 +447,7 @@ document.getElementById('file').addEventListener('change', async (e) => {
   if(!f) return;
   const fd = new FormData();
   fd.append('file', f);
+  fd.append('ttl', currentTtl);
   
   const res = await fetch(basePath+'/upload', { method:'POST', body:fd });
   const text = await res.text();
@@ -307,7 +460,11 @@ document.getElementById('file').addEventListener('change', async (e) => {
 });
 
 function download(){window.location.href=basePath+'/download'}
-async function delFile(){await fetch(basePath+'/delete');loadInfo();}
+async function delFile(){
+  await fetch(basePath+'/delete');
+  clearInterval(expiryInterval);
+  loadInfo();
+}
 
 async function share(){
   try {
@@ -319,6 +476,9 @@ async function share(){
 }
 
 window.onload=loadInfo;
+window.onbeforeunload = () => {
+  clearInterval(expiryInterval);
+};
 </script>
 </body>
 </html>
