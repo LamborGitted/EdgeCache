@@ -102,17 +102,17 @@ function inputHtml() {
   --text:#eaeaf2;
   --text-2:#9898b4;
   --text-3:#5c5c72;
-  --accent:#c8a044;
-  --accent-hover:#dab050;
-  --accent-glow:rgba(200,160,68,0.12);
-  --accent-glow-strong:rgba(200,160,68,0.25);
+  --accent:#e2649f;
+  --accent-hover:#f07aa9;
+  --accent-glow:rgba(226, 100, 159, 0.12);
+  --accent-glow-strong:rgba(152, 68, 200, 0.25);
   --red:#d84050;
   --red-dim:rgba(216,64,80,0.1);
   --green:#40b880;
-  --radius:10px;
+  --radius:0px;
   --font:'Sora',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
 }
-::selection{background:rgba(200,160,68,0.3);color:var(--text)}
+::selection{background:rgba(226, 100, 159, 0.3);color:var(--text)}
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
