@@ -92,9 +92,9 @@ function inputHtml() {
 <style>
 * {margin:0;padding:0;box-sizing:border-box;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}
 body {
-  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;
   background: linear-gradient(135deg, rgb(255, 100, 180) 0%, rgb(200, 150, 255) 50%, rgb(0, 255, 255) 100%);
-  padding:20px;
+  padding:20px;gap:16px;
 }
 .card {
   background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);
@@ -115,6 +115,39 @@ input:focus {border-color:#3b82f6;}
   transition:0.2s;
 }
 .btn:hover {transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.history-card {
+  background:rgba(255,255,255,0.45);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.5);border-radius:20px;
+  padding:24px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.08);
+}
+.history-header {
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;
+}
+.history-title {font-size:16px;color:#333;font-weight:600;}
+.history-clear {
+  font-size:13px;color:#999;cursor:pointer;background:none;border:none;
+  padding:4px 8px;border-radius:8px;transition:0.2s;
+}
+.history-clear:hover {color:#ef4444;background:rgba(239,68,68,0.1);}
+.history-empty {color:#999;font-size:14px;text-align:center;padding:8px 0;}
+.history-item {
+  display:flex;align-items:center;gap:12px;
+  padding:12px;border-radius:12px;background:rgba(255,255,255,0.6);
+  margin-bottom:8px;cursor:pointer;transition:0.2s;
+}
+.history-item:last-child {margin-bottom:0;}
+.history-item:hover {background:rgba(255,255,255,0.85);transform:translateY(-1px);}
+.history-info {flex:1;min-width:0;}
+.history-name {
+  font-size:14px;color:#111;font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.history-meta {font-size:12px;color:#888;margin-top:2px;}
+.history-del {
+  font-size:18px;color:#ccc;cursor:pointer;background:none;border:none;
+  padding:4px 8px;border-radius:8px;flex-shrink:0;transition:0.2s;
+}
+.history-del:hover {color:#ef4444;background:rgba(239,68,68,0.1);}
 </style>
 </head>
 <body>
@@ -124,7 +157,63 @@ input:focus {border-color:#3b82f6;}
   <input type="text" id="key" placeholder="例: test1、测试1" autocomplete="off">
   <button class="btn" onclick="go()">下一步</button>
 </div>
+<div class="history-card" id="historyCard" style="display:none;">
+  <div class="history-header">
+    <span class="history-title">历史记录</span>
+    <button class="history-clear" onclick="clearHistory()">清空</button>
+  </div>
+  <div id="historyList"></div>
+</div>
 <script>
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('edgecache_history') || '[]'); }
+  catch { return []; }
+}
+function saveHistory(list) {
+  localStorage.setItem('edgecache_history', JSON.stringify(list));
+}
+function fmtSize(b) {
+  if(b<1024) return b+'B';
+  if(b<1048576) return (b/1024).toFixed(1)+'KB';
+  return (b/1048576).toFixed(2)+'MB';
+}
+function fmtDate(ts) {
+  return new Date(ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function renderHistory() {
+  const list = getHistory();
+  const card = document.getElementById('historyCard');
+  const container = document.getElementById('historyList');
+  if (!list.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  container.innerHTML = list.map((item, i) =>
+    '<div class="history-item" onclick="enterHistory('+i+')">' +
+      '<div class="history-info">' +
+        '<div class="history-name">' + escHtml(item.fileName) + '</div>' +
+        '<div class="history-meta">' + fmtSize(item.fileSize) + ' · ' + fmtDate(item.uploadTime) + '</div>' +
+      '</div>' +
+      '<button class="history-del" onclick="event.stopPropagation();delHistory('+i+')">×</button>' +
+    '</div>'
+  ).join('');
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function enterHistory(i) {
+  const list = getHistory();
+  if (list[i]) window.location.href = '/' + list[i].encodedKey + '/';
+}
+function delHistory(i) {
+  const list = getHistory();
+  list.splice(i, 1);
+  saveHistory(list);
+  renderHistory();
+}
+function clearHistory() {
+  if (!confirm('确定清空所有历史记录？')) return;
+  localStorage.removeItem('edgecache_history');
+  renderHistory();
+}
 function go(){
   const key = document.getElementById('key').value.trim();
   if(!key) {alert('请输入标识');return;}
@@ -135,6 +224,7 @@ function go(){
   }
   window.location.href = '/' + encoded + '/';
 }
+renderHistory();
 </script>
 </body>
 </html>
@@ -314,7 +404,7 @@ input[type="range"]::-webkit-slider-thumb {
 
   <label class="upload-btn" for="file">选择文件上传</label>
   <input type="file" id="file">
-  <button class="btn btn-secondary" onclick="backToInput()">上一步</button>
+  <button class="btn btn-secondary" onclick="backToInput()">返回首页</button>
   <div id="status"></div>
 </div>
 
@@ -442,9 +532,29 @@ async function loadInfo(){
   }
 }
 
+function saveToHistory(fileName, fileSize) {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('edgecache_history') || '[]'); }
+  catch {}
+  list.unshift({
+    encodedKey: "${encodedKey}",
+    fileName: fileName,
+    fileSize: fileSize,
+    shareUrl: shareUrl,
+    uploadTime: Date.now()
+  });
+  if (list.length > 20) list = list.slice(0, 20);
+  localStorage.setItem('edgecache_history', JSON.stringify(list));
+}
+
+let lastUploadedName = '';
+let lastUploadedSize = 0;
+
 document.getElementById('file').addEventListener('change', async (e) => {
   const f = e.target.files[0];
   if(!f) return;
+  lastUploadedName = f.name;
+  lastUploadedSize = f.size;
   const fd = new FormData();
   fd.append('file', f);
   fd.append('ttl', currentTtl);
@@ -455,6 +565,7 @@ document.getElementById('file').addEventListener('change', async (e) => {
     document.getElementById('status').innerText = text;
   }else{
     document.getElementById('status').innerText = '';
+    saveToHistory(lastUploadedName, lastUploadedSize);
     loadInfo();
   }
 });
