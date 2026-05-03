@@ -189,7 +189,7 @@ function renderHistory() {
   container.innerHTML = list.map((item, i) =>
     '<div class="history-item" onclick="enterHistory('+i+')">' +
       '<div class="history-info">' +
-        '<div class="history-name">' + escHtml(item.fileName) + '</div>' +
+        '<div class="history-name">' + escHtml(item.rawKey) + '/' + escHtml(item.fileName) + '</div>' +
         '<div class="history-meta">' + fmtSize(item.fileSize) + ' · ' + fmtDate(item.uploadTime) + '</div>' +
       '</div>' +
       '<button class="history-del" onclick="event.stopPropagation();delHistory('+i+')">×</button>' +
@@ -538,6 +538,7 @@ function saveToHistory(fileName, fileSize) {
   catch {}
   list.unshift({
     encodedKey: "${encodedKey}",
+    rawKey: "${rawKey}",
     fileName: fileName,
     fileSize: fileSize,
     shareUrl: shareUrl,
