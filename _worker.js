@@ -89,30 +89,34 @@ function inputHtml() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EdgeCache</title>
+<script>(function(){var t=localStorage.getItem('ec_theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light');})()</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#06060b;
-  --surface:#111118;
-  --surface-2:#191922;
-  --border:#2a2a3a;
-  --border-hover:#3a3a50;
-  --text:#eaeaf2;
-  --text-2:#9898b4;
-  --text-3:#5c5c72;
-  --accent:#e2649f;
-  --accent-hover:#f07aa9;
-  --accent-glow:rgba(226, 100, 159, 0.12);
-  --accent-glow-strong:rgba(152, 68, 200, 0.25);
-  --red:#d84050;
-  --red-dim:rgba(216,64,80,0.1);
-  --green:#40b880;
-  --radius:0px;
+  --bg:#06060b;--surface:#111118;--surface-2:#191922;
+  --border:#2a2a3a;--border-hover:#3a3a50;
+  --text:#eaeaf2;--text-2:#9898b4;--text-3:#5c5c72;
+  --accent:#c8a044;--accent-hover:#dab050;
+  --accent-glow:rgba(200,160,68,0.12);--accent-glow-strong:rgba(200,160,68,0.25);
+  --red:#d84050;--red-dim:rgba(216,64,80,0.1);
+  --green:#40b880;--green-dim:rgba(64,184,128,0.12);
+  --grid-color:rgba(42,42,58,0.18);--glow-color:rgba(200,160,68,0.045);
+  --radius:10px;
   --font:'Sora',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
 }
-::selection{background:rgba(226, 100, 159, 0.3);color:var(--text)}
+[data-theme="light"]{
+  --bg:#f4f4f8;--surface:#ffffff;--surface-2:#eaeaef;
+  --border:#d0d0dc;--border-hover:#b8b8c8;
+  --text:#1a1a28;--text-2:#5a5a70;--text-3:#8a8a9e;
+  --accent:#9a7020;--accent-hover:#b08428;
+  --accent-glow:rgba(154,112,32,0.1);--accent-glow-strong:rgba(154,112,32,0.2);
+  --red:#c03040;--red-dim:rgba(192,48,64,0.08);
+  --green:#2a9060;--green-dim:rgba(42,144,96,0.1);
+  --grid-color:rgba(0,0,0,0.045);--glow-color:rgba(180,140,40,0.06);
+}
+::selection{background:var(--accent-glow-strong);color:var(--text)}
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -125,17 +129,29 @@ body{
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% 0%,rgba(200,160,68,0.045) 0%,transparent 100%),
-    repeating-linear-gradient(0deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px),
-    repeating-linear-gradient(90deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px);
+    radial-gradient(ellipse 80% 50% at 50% 0%,var(--glow-color) 0%,transparent 100%),
+    repeating-linear-gradient(0deg,transparent,transparent 47px,var(--grid-color) 47px,var(--grid-color) 48px),
+    repeating-linear-gradient(90deg,transparent,transparent 47px,var(--grid-color) 47px,var(--grid-color) 48px);
 }
 body>*{position:relative;z-index:1}
+
+.theme-toggle{
+  position:fixed;top:16px;right:16px;z-index:100;
+  width:36px;height:36px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-3);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0;
+}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.theme-toggle .ico-moon{display:none}
+.theme-toggle .ico-sun{display:block}
+[data-theme="light"] .theme-toggle .ico-moon{display:block}
+[data-theme="light"] .theme-toggle .ico-sun{display:none}
 
 .brand{
   display:flex;align-items:center;justify-content:center;gap:10px;
   padding:4px 0 0;animation:slideUp .5s ease-out both;
 }
-.brand svg{color:var(--accent);opacity:.85}
+.brand svg.hex{color:var(--accent);opacity:.85}
 .brand-name{
   font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--text-2);
 }
@@ -216,8 +232,13 @@ input[type="text"]::placeholder{color:var(--text-3)}
 </head>
 <body>
 
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+  <svg class="ico-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  <svg class="ico-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+
 <div class="brand">
-  <svg width="18" height="20" viewBox="0 0 20 22" fill="none"><path d="M10 0L20 5.5V16.5L10 22L0 16.5V5.5L10 0Z" stroke="currentColor" stroke-width="1.3"/></svg>
+  <svg class="hex" width="18" height="20" viewBox="0 0 20 22" fill="none"><path d="M10 0L20 5.5V16.5L10 22L0 16.5V5.5L10 0Z" stroke="currentColor" stroke-width="1.3"/></svg>
   <span class="brand-name">EdgeCache</span>
 </div>
 
@@ -237,6 +258,13 @@ input[type="text"]::placeholder{color:var(--text-3)}
 </div>
 
 <script>
+function toggleTheme(){
+  var h=document.documentElement;
+  var c=h.getAttribute('data-theme')||'dark';
+  var n=c==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);
+  localStorage.setItem('ec_theme',n);
+}
 function getHistory() {
   try { return JSON.parse(localStorage.getItem('edgecache_history') || '[]'); }
   catch { return []; }
@@ -327,31 +355,34 @@ function pageHtml(encodedKey, rawKey, origin) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EdgeCache</title>
+<script>(function(){var t=localStorage.getItem('ec_theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light');})()</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#06060b;
-  --surface:#111118;
-  --surface-2:#191922;
-  --border:#2a2a3a;
-  --border-hover:#3a3a50;
-  --text:#eaeaf2;
-  --text-2:#9898b4;
-  --text-3:#5c5c72;
-  --accent:#c8a044;
-  --accent-hover:#dab050;
-  --accent-glow:rgba(200,160,68,0.12);
-  --accent-glow-strong:rgba(200,160,68,0.25);
-  --red:#d84050;
-  --red-dim:rgba(216,64,80,0.1);
-  --green:#40b880;
-  --green-dim:rgba(64,184,128,0.12);
+  --bg:#06060b;--surface:#111118;--surface-2:#191922;
+  --border:#2a2a3a;--border-hover:#3a3a50;
+  --text:#eaeaf2;--text-2:#9898b4;--text-3:#5c5c72;
+  --accent:#c8a044;--accent-hover:#dab050;
+  --accent-glow:rgba(200,160,68,0.12);--accent-glow-strong:rgba(200,160,68,0.25);
+  --red:#d84050;--red-dim:rgba(216,64,80,0.1);
+  --green:#40b880;--green-dim:rgba(64,184,128,0.12);
+  --grid-color:rgba(42,42,58,0.18);--glow-color:rgba(200,160,68,0.045);
   --radius:10px;
   --font:'Sora',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
 }
-::selection{background:rgba(200,160,68,0.3);color:var(--text)}
+[data-theme="light"]{
+  --bg:#f4f4f8;--surface:#ffffff;--surface-2:#eaeaef;
+  --border:#d0d0dc;--border-hover:#b8b8c8;
+  --text:#1a1a28;--text-2:#5a5a70;--text-3:#8a8a9e;
+  --accent:#9a7020;--accent-hover:#b08428;
+  --accent-glow:rgba(154,112,32,0.1);--accent-glow-strong:rgba(154,112,32,0.2);
+  --red:#c03040;--red-dim:rgba(192,48,64,0.08);
+  --green:#2a9060;--green-dim:rgba(42,144,96,0.1);
+  --grid-color:rgba(0,0,0,0.045);--glow-color:rgba(180,140,40,0.06);
+}
+::selection{background:var(--accent-glow-strong);color:var(--text)}
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -364,17 +395,29 @@ body{
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% 0%,rgba(200,160,68,0.045) 0%,transparent 100%),
-    repeating-linear-gradient(0deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px),
-    repeating-linear-gradient(90deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px);
+    radial-gradient(ellipse 80% 50% at 50% 0%,var(--glow-color) 0%,transparent 100%),
+    repeating-linear-gradient(0deg,transparent,transparent 47px,var(--grid-color) 47px,var(--grid-color) 48px),
+    repeating-linear-gradient(90deg,transparent,transparent 47px,var(--grid-color) 47px,var(--grid-color) 48px);
 }
 body>*{position:relative;z-index:1}
+
+.theme-toggle{
+  position:fixed;top:16px;right:16px;z-index:100;
+  width:36px;height:36px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-3);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0;
+}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.theme-toggle .ico-moon{display:none}
+.theme-toggle .ico-sun{display:block}
+[data-theme="light"] .theme-toggle .ico-moon{display:block}
+[data-theme="light"] .theme-toggle .ico-sun{display:none}
 
 .brand{
   display:flex;align-items:center;justify-content:center;gap:10px;
   padding:4px 0 0;animation:slideUp .5s ease-out both;
 }
-.brand svg{color:var(--accent);opacity:.85}
+.brand svg.hex{color:var(--accent);opacity:.85}
 .brand-name{
   font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--text-2);
 }
@@ -467,8 +510,13 @@ input[type="file"]{position:absolute;opacity:0;width:0;height:0}
 </head>
 <body>
 
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+  <svg class="ico-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  <svg class="ico-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+
 <div class="brand">
-  <svg width="18" height="20" viewBox="0 0 20 22" fill="none"><path d="M10 0L20 5.5V16.5L10 22L0 16.5V5.5L10 0Z" stroke="currentColor" stroke-width="1.3"/></svg>
+  <svg class="hex" width="18" height="20" viewBox="0 0 20 22" fill="none"><path d="M10 0L20 5.5V16.5L10 22L0 16.5V5.5L10 0Z" stroke="currentColor" stroke-width="1.3"/></svg>
   <span class="brand-name">EdgeCache</span>
 </div>
 
@@ -501,6 +549,13 @@ input[type="file"]{position:absolute;opacity:0;width:0;height:0}
 </div>
 
 <script>
+function toggleTheme(){
+  var h=document.documentElement;
+  var c=h.getAttribute('data-theme')||'dark';
+  var n=c==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);
+  localStorage.setItem('ec_theme',n);
+}
 const basePath = "${basePath}";
 const shareUrl = "${shareUrl}";
 
