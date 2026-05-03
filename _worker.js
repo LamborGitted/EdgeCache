@@ -89,74 +89,145 @@ function inputHtml() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EdgeCache</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-* {margin:0;padding:0;box-sizing:border-box;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}
-body {
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06060b;
+  --surface:#111118;
+  --surface-2:#191922;
+  --border:#2a2a3a;
+  --border-hover:#3a3a50;
+  --text:#eaeaf2;
+  --text-2:#9898b4;
+  --text-3:#5c5c72;
+  --accent:#c8a044;
+  --accent-hover:#dab050;
+  --accent-glow:rgba(200,160,68,0.12);
+  --accent-glow-strong:rgba(200,160,68,0.25);
+  --red:#d84050;
+  --red-dim:rgba(216,64,80,0.1);
+  --green:#40b880;
+  --radius:10px;
+  --font:'Sora',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+}
+::selection{background:rgba(200,160,68,0.3);color:var(--text)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+body{
   min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;
-  background: linear-gradient(135deg, rgb(255, 100, 180) 0%, rgb(200, 150, 255) 50%, rgb(0, 255, 255) 100%);
-  padding:20px;gap:16px;
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  padding:20px;gap:20px;position:relative;overflow-x:hidden;
 }
-.card {
-  background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,0.6);border-radius:20px;
-  padding:32px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.1);
-  display:flex;flex-direction:column;gap:20px;
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%,rgba(200,160,68,0.045) 0%,transparent 100%),
+    repeating-linear-gradient(0deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px),
+    repeating-linear-gradient(90deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px);
 }
-.title {font-size:24px;color:#111;text-align:center;font-weight:600;}
-.tip {color:#666;font-size:14px;text-align:center;}
-input {
-  padding:16px;border-radius:14px;border:1px solid #ddd;
-  font-size:16px;outline:none;transition:0.2s;
+body>*{position:relative;z-index:1}
+
+.brand{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:4px 0 0;animation:slideUp .5s ease-out both;
 }
-input:focus {border-color:#3b82f6;}
-.btn {
-  padding:16px;border:none;border-radius:14px;background:#3b82f6;
-  color:#fff;font-size:16px;font-weight:500;cursor:pointer;
-  transition:0.2s;
+.brand svg{color:var(--accent);opacity:.85}
+.brand-name{
+  font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--text-2);
 }
-.btn:hover {transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.1);}
-.history-card {
-  background:rgba(255,255,255,0.45);backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,0.5);border-radius:20px;
-  padding:24px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.08);
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px 24px;width:100%;max-width:400px;
+  display:flex;flex-direction:column;gap:18px;
+  animation:slideUp .5s ease-out .08s both;position:relative;overflow:hidden;
 }
-.history-header {
-  display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent 5%,var(--accent) 50%,transparent 95%);opacity:.5;
 }
-.history-title {font-size:16px;color:#333;font-weight:600;}
-.history-clear {
-  font-size:13px;color:#999;cursor:pointer;background:none;border:none;
-  padding:4px 8px;border-radius:8px;transition:0.2s;
+
+.title{font-size:19px;font-weight:600;text-align:center;color:var(--text);letter-spacing:-.01em}
+.tip{color:var(--text-3);font-size:13px;text-align:center;line-height:1.5}
+
+input[type="text"]{
+  width:100%;padding:14px 16px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:var(--font);font-size:15px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
 }
-.history-clear:hover {color:#ef4444;background:rgba(239,68,68,0.1);}
-.history-empty {color:#999;font-size:14px;text-align:center;padding:8px 0;}
-.history-item {
-  display:flex;align-items:center;gap:12px;
-  padding:12px;border-radius:12px;background:rgba(255,255,255,0.6);
-  margin-bottom:8px;cursor:pointer;transition:0.2s;
+input[type="text"]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+input[type="text"]::placeholder{color:var(--text-3)}
+
+.btn{
+  display:block;width:100%;padding:14px;border:none;border-radius:8px;
+  font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;
+  text-align:center;transition:all .2s;letter-spacing:.02em;
+  background:var(--accent);color:#0a0a0f;
 }
-.history-item:last-child {margin-bottom:0;}
-.history-item:hover {background:rgba(255,255,255,0.85);transform:translateY(-1px);}
-.history-info {flex:1;min-width:0;}
-.history-name {
-  font-size:14px;color:#111;font-weight:500;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+.btn:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 4px 24px var(--accent-glow)}
+.btn:active{transform:translateY(0)}
+
+.history-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px 24px;width:100%;max-width:400px;
+  animation:slideUp .5s ease-out .16s both;
 }
-.history-meta {font-size:12px;color:#888;margin-top:2px;}
-.history-del {
-  font-size:18px;color:#ccc;cursor:pointer;background:none;border:none;
-  padding:4px 8px;border-radius:8px;flex-shrink:0;transition:0.2s;
+.history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.history-title{
+  font-size:11px;font-weight:600;color:var(--text-3);
+  letter-spacing:.12em;text-transform:uppercase;
 }
-.history-del:hover {color:#ef4444;background:rgba(239,68,68,0.1);}
+.history-clear{
+  font-size:12px;color:var(--text-3);background:none;border:none;cursor:pointer;
+  padding:4px 10px;border-radius:6px;font-family:var(--font);transition:.2s;
+}
+.history-clear:hover{color:var(--red);background:var(--red-dim)}
+.history-empty{color:var(--text-3);font-size:13px;text-align:center;padding:8px 0}
+.history-item{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;
+  border-radius:8px;background:var(--surface-2);
+  margin-bottom:6px;cursor:pointer;transition:all .2s;
+  border:1px solid transparent;
+}
+.history-item:last-child{margin-bottom:0}
+.history-item:hover{border-color:var(--border);transform:translateX(4px)}
+.history-info{flex:1;min-width:0}
+.history-name{font-size:13px;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-meta{font-size:11px;color:var(--text-3);margin-top:3px}
+.history-del{
+  font-size:15px;color:var(--text-3);background:none;border:none;cursor:pointer;
+  padding:4px 8px;border-radius:6px;flex-shrink:0;transition:.2s;font-family:var(--font);line-height:1;
+}
+.history-del:hover{color:var(--red);background:var(--red-dim)}
+
+@keyframes slideUp{
+  from{opacity:0;transform:translateY(18px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
 </style>
 </head>
 <body>
+
+<div class="brand">
+  <svg width="18" height="20" viewBox="0 0 20 22" fill="none"><path d="M10 0L20 5.5V16.5L10 22L0 16.5V5.5L10 0Z" stroke="currentColor" stroke-width="1.3"/></svg>
+  <span class="brand-name">EdgeCache</span>
+</div>
+
 <div class="card">
   <h2 class="title">进入专属文件空间</h2>
   <p class="tip">输入自定义标识, 用于鉴权</p>
   <input type="text" id="key" placeholder="例: test1、测试1" autocomplete="off">
   <button class="btn" onclick="go()">下一步</button>
 </div>
+
 <div class="history-card" id="historyCard" style="display:none;">
   <div class="history-header">
     <span class="history-title">历史记录</span>
@@ -164,6 +235,7 @@ input:focus {border-color:#3b82f6;}
   </div>
   <div id="historyList"></div>
 </div>
+
 <script>
 function getHistory() {
   try { return JSON.parse(localStorage.getItem('edgecache_history') || '[]'); }
@@ -232,27 +304,21 @@ renderHistory();
 }
 
 function pageHtml(encodedKey, rawKey, origin) {
-  // 工具函数：每32个字符插入换行符
   function wrapText(str, maxLength) {
     const regex = new RegExp(`(.{1,${maxLength}})`, 'g');
     return str.match(regex)?.join('\n') || str;
   }
-  // 处理标识, 每32字符换行
   const wrappedKey = wrapText(rawKey, 32);
   
   const shareUrl = `${origin}/${encodedKey}/`;
   const basePath = `/${encodedKey}`;
 
-  // ====================== 核心修改：判断换行, 控制空间标识显示 ======================
   let tipContent;
   if (wrappedKey.includes('\n')) {
-    // 标识有换行 → 空间标识独立一行
     tipContent = `空间标识:\n${wrappedKey}\n单文件最大25MB`;
   } else {
-    // 标识无换行 → 空间标识与标识同行
     tipContent = `空间标识: ${wrappedKey}\n单文件最大25MB`;
   }
-  // ==============================================================================
 
   return `
 <!DOCTYPE html>
@@ -261,140 +327,153 @@ function pageHtml(encodedKey, rawKey, origin) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EdgeCache</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06060b;
+  --surface:#111118;
+  --surface-2:#191922;
+  --border:#2a2a3a;
+  --border-hover:#3a3a50;
+  --text:#eaeaf2;
+  --text-2:#9898b4;
+  --text-3:#5c5c72;
+  --accent:#c8a044;
+  --accent-hover:#dab050;
+  --accent-glow:rgba(200,160,68,0.12);
+  --accent-glow-strong:rgba(200,160,68,0.25);
+  --red:#d84050;
+  --red-dim:rgba(216,64,80,0.1);
+  --green:#40b880;
+  --green-dim:rgba(64,184,128,0.12);
+  --radius:10px;
+  --font:'Sora',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
 }
-body {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgb(255, 100, 180) 0%, rgb(200, 150, 255) 50%, rgb(0, 255, 255) 100%);
-  padding: 20px;
+::selection{background:rgba(200,160,68,0.3);color:var(--text)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+body{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  padding:20px;gap:20px;position:relative;overflow-x:hidden;
 }
-.card {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  padding: 32px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%,rgba(200,160,68,0.045) 0%,transparent 100%),
+    repeating-linear-gradient(0deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px),
+    repeating-linear-gradient(90deg,transparent,transparent 47px,rgba(42,42,58,0.18) 47px,rgba(42,42,58,0.18) 48px);
 }
-.card-title {
-  font-size: 24px;
-  color: #111;
-  text-align: center;
-  font-weight: 600;
+body>*{position:relative;z-index:1}
+
+.brand{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:4px 0 0;animation:slideUp .5s ease-out both;
 }
-.tip {
-  color: #dc2626;
-  font-size: 14px;
-  text-align: center;
-  white-space: pre-wrap;
-  line-height: 1.6;
+.brand svg{color:var(--accent);opacity:.85}
+.brand-name{
+  font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--text-2);
 }
-.file-info {
-  background: rgba(255, 255, 255, 0.7);
-  padding: 18px;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 15px;
-  line-height: 1.8;
-  word-break: break-all;
-  white-space: pre-wrap;
-  min-height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 8px;
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px 24px;width:100%;max-width:400px;
+  display:flex;flex-direction:column;gap:18px;
+  animation:slideUp .5s ease-out .08s both;position:relative;overflow:hidden;
 }
-.expiry-info {
-  color: #ef4444;
-  font-size: 14px;
-  line-height: 1.6;
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent 5%,var(--accent) 50%,transparent 95%);opacity:.5;
 }
-.btn-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: auto;
+
+.title{font-size:19px;font-weight:600;text-align:center;color:var(--text);letter-spacing:-.01em}
+
+.tip{
+  color:var(--text-2);font-size:13px;text-align:center;white-space:pre-wrap;line-height:1.6;
+  padding:12px 14px;background:var(--accent-glow);border-radius:8px;
+  border-left:2px solid var(--accent);
 }
-.btn {
-  padding: 16px;
-  border: none;
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: center;
-  transition: 0.2s;
+
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--radius);
+  padding:22px 16px;text-align:center;cursor:pointer;
+  color:var(--text-2);font-size:14px;font-family:var(--font);
+  transition:all .25s;display:block;
 }
-.btn-primary {background: #3b82f6;color: #fff;}
-.btn-success {background: #10b981;color: #fff;}
-.btn-danger {background: #ef4444;color: #fff;}
-.btn-secondary {background: #6b7280;color: #fff;}
-.upload-btn {
-  background: #3b82f6;
-  color: #fff;
-  padding: 16px;
-  border-radius: 14px;
-  cursor: pointer;
-  text-align: center;
-  font-size: 16px;
+.upload-zone:hover{
+  border-color:var(--accent);color:var(--accent);background:var(--accent-glow);
 }
-#status {
-  color: #dc2626;
-  font-size: 14px;
-  text-align: center;
-  min-height: 20px;
+
+.file-info{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+  padding:18px;text-align:center;font-size:14px;line-height:1.8;
+  word-break:break-all;white-space:pre-wrap;min-height:80px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;
+  color:var(--text-2);
 }
-#uploadArea, #fileArea {display: none;}
-input[type="file"] {position: absolute;opacity: 0;width: 0;height: 0;}
-.btn:hover, .upload-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+.expiry-info{color:var(--red);font-size:13px;line-height:1.6}
+
+.btn-group{display:flex;flex-direction:column;gap:8px;margin-top:auto}
+
+.btn{
+  display:block;width:100%;padding:14px;border-radius:8px;
+  font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;
+  text-align:center;transition:all .2s;letter-spacing:.02em;
 }
-.slider-container {
-  width: 100%;
-  padding: 10px 0;
+.btn-primary{background:var(--accent);border:none;color:#0a0a0f}
+.btn-primary:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 4px 24px var(--accent-glow)}
+.btn-success{background:var(--green);border:none;color:#0a0a0f}
+.btn-success:hover{transform:translateY(-1px);box-shadow:0 4px 24px var(--green-dim)}
+.btn-danger{background:transparent;border:1px solid var(--red);color:var(--red)}
+.btn-danger:hover{background:var(--red-dim);transform:translateY(-1px)}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text-2)}
+.btn-secondary:hover{border-color:var(--border-hover);color:var(--text)}
+.btn:active{transform:translateY(0)!important}
+
+.slider-container{width:100%;padding:6px 0}
+.slider-label{text-align:center;font-size:13px;color:var(--text-2);margin-bottom:10px}
+.slider-label span{color:var(--accent);font-weight:600}
+
+input[type="range"]{
+  width:100%;height:4px;border-radius:2px;outline:none;-webkit-appearance:none;
+  background:var(--border);
 }
-.slider-label {
-  text-align: center;
-  font-size: 15px;
-  color: #333;
-  margin-bottom: 8px;
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:3px solid var(--surface);
+  box-shadow:0 0 10px var(--accent-glow);
 }
-input[type="range"] {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  outline: none;
-  -webkit-appearance: none;
-  background: #ddd;
+input[type="range"]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:3px solid var(--surface);
 }
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
+
+#status{color:var(--red);font-size:13px;text-align:center;min-height:20px}
+#uploadArea,#fileArea{display:none}
+input[type="file"]{position:absolute;opacity:0;width:0;height:0}
+
+@keyframes slideUp{
+  from{opacity:0;transform:translateY(18px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
 }
 </style>
 </head>
 <body>
+
+<div class="brand">
+  <svg width="18" height="20" viewBox="0 0 20 22" fill="none"><path d="M10 0L20 5.5V16.5L10 22L0 16.5V5.5L10 0Z" stroke="currentColor" stroke-width="1.3"/></svg>
+  <span class="brand-name">EdgeCache</span>
+</div>
+
 <div id="uploadArea" class="card">
-  <h2 class="card-title">上传文件</h2>
+  <h2 class="title">上传文件</h2>
   <p class="tip">${tipContent}</p>
   
   <div class="slider-container">
@@ -402,14 +481,14 @@ input[type="range"]::-webkit-slider-thumb {
     <input type="range" id="ttlSlider" min="0" max="5" value="1" step="1">
   </div>
 
-  <label class="upload-btn" for="file">选择文件上传</label>
+  <label class="upload-zone" for="file">↑ 选择文件上传</label>
   <input type="file" id="file">
   <button class="btn btn-secondary" onclick="backToInput()">返回首页</button>
   <div id="status"></div>
 </div>
 
 <div id="fileArea" class="card">
-  <h2 class="card-title">当前文件</h2>
+  <h2 class="title">当前文件</h2>
   <div class="file-info">
     <div id="fileBasicInfo"></div>
     <div id="fileExpiryInfo" class="expiry-info"></div>
@@ -425,7 +504,6 @@ input[type="range"]::-webkit-slider-thumb {
 const basePath = "${basePath}";
 const shareUrl = "${shareUrl}";
 
-// 新增1分钟测试选项, 共6个档位
 const ttlOptions = [
   { text: '5分钟', value: 300 },
   { text: '30分钟', value: 1800 },
@@ -483,7 +561,6 @@ function formatDate(timestamp) {
   });
 }
 
-// 分两行显示：有效期剩余 + 过期时间
 function updateExpiryDisplay(expiration) {
   const now = Math.floor(Date.now()/1000);
   const remaining = expiration - now;
@@ -496,7 +573,6 @@ function updateExpiryDisplay(expiration) {
   
   const ttlText = fmtTime(remaining);
   const expiryDate = formatDate(expiration);
-  // LLM经常乱改下面第二行
   document.getElementById('fileExpiryInfo').innerText = 
     \`剩余有效期：\${ttlText}\\n过期时间：\${expiryDate}\`;
 }
